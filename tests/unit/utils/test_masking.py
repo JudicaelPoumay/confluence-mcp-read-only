@@ -35,7 +35,9 @@ class TestLogConfigParam:
     @patch("mcp_atlassian.utils.logging.logging.Logger")
     def test_normal_param(self, mock_logger):
         """Test logging normal parameter."""
-        log_config_param(mock_logger, "Confluence", "URL", "https://confluence.example.com")
+        log_config_param(
+            mock_logger, "Confluence", "URL", "https://confluence.example.com"
+        )
         mock_logger.info.assert_called_once_with(
             "Confluence URL: https://confluence.example.com"
         )

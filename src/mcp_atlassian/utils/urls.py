@@ -31,7 +31,4 @@ def is_atlassian_cloud_url(url: str) -> bool:
         return False
 
     # The standard check for Atlassian cloud domains
-    return (
-        ".atlassian.net" in hostname
-        or "api.atlassian.com" in hostname
-    )
+    return ".atlassian.net" in hostname or "api.atlassian.com" in hostname
