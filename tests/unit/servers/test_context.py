@@ -30,7 +30,9 @@ class TestMainAppContext:
 
         # Act
         context = MainAppContext(
-            full_confluence_config=confluence_config, read_only=True
+            full_confluence_config=confluence_config,
+            read_only=True,
+            enabled_tools=enabled_tools,
         )
 
         # Assert
@@ -48,7 +50,9 @@ class TestMainAppContext:
         )
 
         # Act
-        context = MainAppContext(full_confluence_config=confluence_config, read_only=True)
+        context = MainAppContext(
+            full_confluence_config=confluence_config, read_only=True
+        )
 
         # Assert
         assert context.full_confluence_config is confluence_config
