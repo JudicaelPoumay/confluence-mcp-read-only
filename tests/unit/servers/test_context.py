@@ -30,9 +30,7 @@ class TestMainAppContext:
 
         # Act
         context = MainAppContext(
-            full_confluence_config=confluence_config,
-            read_only=True,
-            enabled_tools=enabled_tools,
+            full_confluence_config=confluence_config, read_only=True
         )
 
         # Assert
@@ -153,10 +151,14 @@ class TestMainAppContext:
             api_token="token",
         )
         context1 = MainAppContext(
-            full_confluence_config=confluence_config, read_only=True, enabled_tools=["tool1"]
+            full_confluence_config=confluence_config,
+            read_only=True,
+            enabled_tools=["tool1"],
         )
         context2 = MainAppContext(
-            full_confluence_config=confluence_config, read_only=True, enabled_tools=["tool1"]
+            full_confluence_config=confluence_config,
+            read_only=True,
+            enabled_tools=["tool1"],
         )
         assert context1 == context2
 

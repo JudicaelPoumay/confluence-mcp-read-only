@@ -153,9 +153,7 @@ class TestCreateUserConfigForFetcher:
             ("pat", "user-pat-token"),
         ],
     )
-    def test_create_user_config_success(
-        self, config_factory, auth_type, token
-    ):
+    def test_create_user_config_success(self, config_factory, auth_type, token):
         """Test creating user-specific configs with various auth types."""
         base_config = config_factory.create_confluence_config(auth_type=auth_type)
         expected_type = ConfluenceConfig

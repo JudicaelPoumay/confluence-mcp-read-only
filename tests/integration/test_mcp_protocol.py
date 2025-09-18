@@ -583,9 +583,7 @@ class TestMCPProtocolIntegration:
         with MockEnvironment.basic_auth_env():
             with patch.dict(
                 os.environ,
-                {
-                    "ENABLED_TOOLS": "confluence_get_page"
-                },
+                {"ENABLED_TOOLS": "confluence_get_page"},
             ):
                 # Run lifespan
                 app = MagicMock()
@@ -614,9 +612,7 @@ class TestMCPProtocolIntegration:
         assert response.status_code == 200
         assert response.json() == {"status": "ok"}
 
-    async def test_combined_filtering_scenarios(
-        self, atlassian_mcp_server
-    ):
+    async def test_combined_filtering_scenarios(self, atlassian_mcp_server):
         """Test combined filtering: read-only mode + enabled tools + service availability."""
         with MockEnvironment.basic_auth_env():
             # Create app context with multiple constraints
