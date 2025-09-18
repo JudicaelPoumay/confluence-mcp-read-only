@@ -1,7 +1,7 @@
 """Integration tests for SSL verification functionality."""
 
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from requests.sessions import Session

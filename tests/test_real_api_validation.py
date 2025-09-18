@@ -15,9 +15,7 @@ Required environment variables:
     - CONFLUENCE_TEST_PAGE_ID, CONFLUENCE_TEST_SPACE_KEY
 """
 
-import json
 import os
-from collections.abc import Generator
 
 import pytest
 from fastmcp import Client
