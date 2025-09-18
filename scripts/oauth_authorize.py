@@ -9,9 +9,9 @@ This script helps with the OAuth 2.0 (3LO) authorization flow for Atlassian Clou
 4. Saves the tokens for later use by MCP Atlassian
 
 Usage:
-    python oauth_authorize.py --client-id YOUR_CLIENT_ID --client-secret YOUR_CLIENT_SECRET
-                             --redirect-uri http://localhost:8080/callback
-                             --scope "read:jira-work write:jira-work read:confluence-space.summary offline_access"
+    python oauth_authorize.py --client-id YOUR_CLIENT_ID --client-secret YOUR_CLIENT_SECRET \\
+                             --redirect-uri http://localhost:8080/callback \\
+                             --scope "read:confluence-content.all offline_access"
 
 IMPORTANT: The 'offline_access' scope is required for refresh tokens to work properly.
 Without this scope, tokens will expire quickly and authentication will fail.

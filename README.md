@@ -1,4 +1,4 @@
-# MCP Atlassian
+# MCP Atlassian Confluence (Read-Only)
 
 ![PyPI Version](https://img.shields.io/pypi/v/mcp-atlassian)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/mcp-atlassian)
@@ -6,26 +6,14 @@
 [![Run Tests](https://github.com/sooperset/mcp-atlassian/actions/workflows/tests.yml/badge.svg)](https://github.com/sooperset/mcp-atlassian/actions/workflows/tests.yml)
 ![License](https://img.shields.io/github/license/sooperset/mcp-atlassian)
 
-Model Context Protocol (MCP) server for Atlassian products (Confluence and Jira). This integration supports both Confluence & Jira Cloud and Server/Data Center deployments.
+Model Context Protocol (MCP) server for Atlassian Confluence. This integration provides read-only access to Confluence Cloud and Server/Data Center deployments.
 
 ## Example Usage
 
 Ask your AI assistant to:
 
-- **📝 Automatic Jira Updates** - "Update Jira from our meeting notes"
 - **🔍 AI-Powered Confluence Search** - "Find our OKR guide in Confluence and summarize it"
-- **🐛 Smart Jira Issue Filtering** - "Show me urgent bugs in PROJ project from last week"
-- **📄 Content Creation & Management** - "Create a tech design doc for XYZ feature"
-
-### Feature Demo
-
-https://github.com/user-attachments/assets/35303504-14c6-4ae4-913b-7c25ea511c3e
-
-<details> <summary>Confluence Demo</summary>
-
-https://github.com/user-attachments/assets/7fe9c488-ad0c-4876-9b54-120b666bb785
-
-</details>
+- **📄 Content Retrieval** - "Get the content of the 'Q3 Planning' page in the 'Engineering' space"
 
 ### Compatibility
 
@@ -33,8 +21,6 @@ https://github.com/user-attachments/assets/7fe9c488-ad0c-4876-9b54-120b666bb785
 |----------------|--------------------|-----------------------------|
 | **Confluence** | Cloud              | ✅ Fully supported           |
 | **Confluence** | Server/Data Center | ✅ Supported (version 6.0+)  |
-| **Jira**       | Cloud              | ✅ Fully supported           |
-| **Jira**       | Server/Data Center | ✅ Supported (version 8.14+) |
 
 ## Quick Start Guide
 
@@ -61,7 +47,7 @@ MCP Atlassian supports three authentication methods:
 
 1. Go to [Atlassian Developer Console](https://developer.atlassian.com/console/myapps/)
 2. Create an "OAuth 2.0 (3LO) integration" app
-3. Configure **Permissions** (scopes) for Jira/Confluence
+3. Configure **Permissions** (scopes) for Confluence
 4. Set **Callback URL** (e.g., `http://localhost:8080/callback`)
 5. Run setup wizard:
    ```bash
@@ -80,7 +66,7 @@ MCP Atlassian supports three authentication methods:
    - `ATLASSIAN_OAUTH_SCOPE`
 
 > [!IMPORTANT]
-> For the standard OAuth flow described above, include `offline_access` in your scope (e.g., `read:jira-work write:jira-work offline_access`). This allows the server to refresh the access token automatically.
+> For the standard OAuth flow described above, include `offline_access` in your scope (e.g., `read:confluence-content.all offline_access`). This allows the server to refresh the access token automatically.
 
 <details>
 <summary>Alternative: Using a Pre-existing OAuth Access Token (BYOT)</summary>
@@ -101,7 +87,7 @@ To use this method, set the following environment variables (or use the correspo
 - **Unused Variables:** The standard OAuth client variables (`ATLASSIAN_OAUTH_CLIENT_ID`, `ATLASSIAN_OAUTH_CLIENT_SECRET`, `ATLASSIAN_OAUTH_REDIRECT_URI`, `ATLASSIAN_OAUTH_SCOPE`) are **not** used and can be omitted when configuring for BYOT.
 - **No Setup Wizard:** The `--oauth-setup` wizard is not applicable and should not be used for this approach.
 - **No Token Cache Volume:** The Docker volume mount for token storage (e.g., `-v "${HOME}/.mcp-atlassian:/home/app/.mcp-atlassian"`) is also not necessary if you are exclusively using the BYOT method, as no tokens are stored or managed by this server.
-- **Scope:** The provided access token must already have the necessary permissions (scopes) for the Jira/Confluence operations you intend to perform.
+- **Scope:** The provided access token must already have the necessary permissions (scopes) for the Confluence operations you intend to perform.
 
 This option is useful in scenarios where OAuth credential management is centralized or handled by other infrastructure components.
 </details>
@@ -141,11 +127,10 @@ There are two main approaches to configure the Docker container:
 > Common environment variables include:
 >
 > - `CONFLUENCE_SPACES_FILTER`: Filter by space keys (e.g., "DEV,TEAM,DOC")
-> - `JIRA_PROJECTS_FILTER`: Filter by project keys (e.g., "PROJ,DEV,SUPPORT")
-> - `READ_ONLY_MODE`: Set to "true" to disable write operations
+> - `READ_ONLY_MODE`: Set to "true" to disable write operations (this is now the default behavior)
 > - `MCP_VERBOSE`: Set to "true" for more detailed logging
 > - `MCP_LOGGING_STDOUT`: Set to "true" to log to stdout instead of stderr
-> - `ENABLED_TOOLS`: Comma-separated list of tool names to enable (e.g., "confluence_search,jira_get_issue")
+> - `ENABLED_TOOLS`: Comma-separated list of tool names to enable (e.g., "confluence_search,confluence_get_page")
 >
 > See the [.env.example](https://github.com/sooperset/mcp-atlassian/blob/main/.env.example) file for all available options.
 
@@ -165,18 +150,12 @@ There are two main approaches to configure the Docker container:
         "-e", "CONFLUENCE_URL",
         "-e", "CONFLUENCE_USERNAME",
         "-e", "CONFLUENCE_API_TOKEN",
-        "-e", "JIRA_URL",
-        "-e", "JIRA_USERNAME",
-        "-e", "JIRA_API_TOKEN",
         "ghcr.io/sooperset/mcp-atlassian:latest"
       ],
       "env": {
         "CONFLUENCE_URL": "https://your-company.atlassian.net/wiki",
         "CONFLUENCE_USERNAME": "your.email@company.com",
-        "CONFLUENCE_API_TOKEN": "your_confluence_api_token",
-        "JIRA_URL": "https://your-company.atlassian.net",
-        "JIRA_USERNAME": "your.email@company.com",
-        "JIRA_API_TOKEN": "your_jira_api_token"
+        "CONFLUENCE_API_TOKEN": "your_confluence_api_token"
       }
     }
   }
@@ -222,18 +201,12 @@ For Server/Data Center deployments, use direct variable passing:
         "-e", "CONFLUENCE_URL",
         "-e", "CONFLUENCE_PERSONAL_TOKEN",
         "-e", "CONFLUENCE_SSL_VERIFY",
-        "-e", "JIRA_URL",
-        "-e", "JIRA_PERSONAL_TOKEN",
-        "-e", "JIRA_SSL_VERIFY",
         "ghcr.io/sooperset/mcp-atlassian:latest"
       ],
       "env": {
         "CONFLUENCE_URL": "https://confluence.your-company.com",
         "CONFLUENCE_PERSONAL_TOKEN": "your_confluence_pat",
-        "CONFLUENCE_SSL_VERIFY": "false",
-        "JIRA_URL": "https://jira.your-company.com",
-        "JIRA_PERSONAL_TOKEN": "your_jira_pat",
-        "JIRA_SSL_VERIFY": "false"
+        "CONFLUENCE_SSL_VERIFY": "false"
       }
     }
   }
@@ -241,7 +214,7 @@ For Server/Data Center deployments, use direct variable passing:
 ```
 
 > [!NOTE]
-> Set `CONFLUENCE_SSL_VERIFY` and `JIRA_SSL_VERIFY` to "false" only if you have self-signed certificates.
+> Set `CONFLUENCE_SSL_VERIFY` to "false" only if you have self-signed certificates.
 
 </details>
 
@@ -265,7 +238,6 @@ This configuration is for when you use the server's built-in OAuth client and ha
         "--rm",
         "-i",
         "-v", "<path_to_your_home>/.mcp-atlassian:/home/app/.mcp-atlassian",
-        "-e", "JIRA_URL",
         "-e", "CONFLUENCE_URL",
         "-e", "ATLASSIAN_OAUTH_CLIENT_ID",
         "-e", "ATLASSIAN_OAUTH_CLIENT_SECRET",
@@ -275,12 +247,11 @@ This configuration is for when you use the server's built-in OAuth client and ha
         "ghcr.io/sooperset/mcp-atlassian:latest"
       ],
       "env": {
-        "JIRA_URL": "https://your-company.atlassian.net",
         "CONFLUENCE_URL": "https://your-company.atlassian.net/wiki",
         "ATLASSIAN_OAUTH_CLIENT_ID": "YOUR_OAUTH_APP_CLIENT_ID",
         "ATLASSIAN_OAUTH_CLIENT_SECRET": "YOUR_OAUTH_APP_CLIENT_SECRET",
         "ATLASSIAN_OAUTH_REDIRECT_URI": "http://localhost:8080/callback",
-        "ATLASSIAN_OAUTH_SCOPE": "read:jira-work write:jira-work read:confluence-content.all write:confluence-content offline_access",
+        "ATLASSIAN_OAUTH_SCOPE": "read:confluence-content.all offline_access",
         "ATLASSIAN_OAUTH_CLOUD_ID": "YOUR_CLOUD_ID_FROM_SETUP_WIZARD"
       }
     }
@@ -292,7 +263,7 @@ This configuration is for when you use the server's built-in OAuth client and ha
 > - For the Standard Flow:
 >   - `ATLASSIAN_OAUTH_CLOUD_ID` is obtained from the `--oauth-setup` wizard output or is known for your instance.
 >   - Other `ATLASSIAN_OAUTH_*` client variables are from your OAuth app in the Atlassian Developer Console.
->   - `JIRA_URL` and `CONFLUENCE_URL` for your Cloud instances are always required.
+>   - `CONFLUENCE_URL` for your Cloud instances is always required.
 >   - The volume mount (`-v .../.mcp-atlassian:/home/app/.mcp-atlassian`) is crucial for persisting the OAuth tokens obtained by the wizard, enabling automatic refresh.
 
 **Example for Pre-existing Access Token (BYOT - Bring Your Own Token):**
@@ -308,14 +279,12 @@ This configuration is for when you are providing your own externally managed OAu
         "run",
         "--rm",
         "-i",
-        "-e", "JIRA_URL",
         "-e", "CONFLUENCE_URL",
         "-e", "ATLASSIAN_OAUTH_CLOUD_ID",
         "-e", "ATLASSIAN_OAUTH_ACCESS_TOKEN",
         "ghcr.io/sooperset/mcp-atlassian:latest"
       ],
       "env": {
-        "JIRA_URL": "https://your-company.atlassian.net",
         "CONFLUENCE_URL": "https://your-company.atlassian.net/wiki",
         "ATLASSIAN_OAUTH_CLOUD_ID": "YOUR_KNOWN_CLOUD_ID",
         "ATLASSIAN_OAUTH_ACCESS_TOKEN": "YOUR_PRE_EXISTING_OAUTH_ACCESS_TOKEN"
@@ -327,7 +296,7 @@ This configuration is for when you are providing your own externally managed OAu
 
 > [!NOTE]
 > - For the BYOT Method:
->   - You primarily need `JIRA_URL`, `CONFLUENCE_URL`, `ATLASSIAN_OAUTH_CLOUD_ID`, and `ATLASSIAN_OAUTH_ACCESS_TOKEN`.
+>   - You primarily need `CONFLUENCE_URL`, `ATLASSIAN_OAUTH_CLOUD_ID`, and `ATLASSIAN_OAUTH_ACCESS_TOKEN`.
 >   - Standard OAuth client variables (`ATLASSIAN_OAUTH_CLIENT_ID`, `CLIENT_SECRET`, `REDIRECT_URI`, `SCOPE`) are **not** used.
 >   - Token lifecycle (e.g., refreshing the token before it expires and restarting mcp-atlassian) is your responsibility, as the server will not refresh BYOT tokens.
 
@@ -339,7 +308,7 @@ This configuration is for when you are providing your own externally managed OAu
 MCP Atlassian supports routing API requests through standard HTTP/HTTPS/SOCKS proxies. Configure using environment variables:
 
 - Supports standard `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`, `SOCKS_PROXY`.
-- Service-specific overrides are available (e.g., `JIRA_HTTPS_PROXY`, `CONFLUENCE_NO_PROXY`).
+- Service-specific overrides are available (e.g., `CONFLUENCE_HTTPS_PROXY`, `CONFLUENCE_NO_PROXY`).
 - Service-specific variables override global ones for that service.
 
 Add the relevant proxy variables to the `args` (using `-e`) and `env` sections of your MCP configuration:
@@ -353,14 +322,14 @@ Add the relevant proxy variables to the `args` (using `-e`) and `env` sections o
         "run",
         "-i",
         "--rm",
-        "-e", "... existing Confluence/Jira vars",
+        "-e", "... existing Confluence vars",
         "-e", "HTTP_PROXY",
         "-e", "HTTPS_PROXY",
         "-e", "NO_PROXY",
         "ghcr.io/sooperset/mcp-atlassian:latest"
       ],
       "env": {
-        "... existing Confluence/Jira vars": "...",
+        "... existing Confluence vars": "...",
         "HTTP_PROXY": "http://proxy.internal:8080",
         "HTTPS_PROXY": "http://proxy.internal:8080",
         "NO_PROXY": "localhost,.your-company.com"
@@ -393,21 +362,13 @@ Custom headers are configured using environment variables with comma-separated k
         "-e", "CONFLUENCE_USERNAME",
         "-e", "CONFLUENCE_API_TOKEN",
         "-e", "CONFLUENCE_CUSTOM_HEADERS",
-        "-e", "JIRA_URL",
-        "-e", "JIRA_USERNAME",
-        "-e", "JIRA_API_TOKEN",
-        "-e", "JIRA_CUSTOM_HEADERS",
         "ghcr.io/sooperset/mcp-atlassian:latest"
       ],
       "env": {
         "CONFLUENCE_URL": "https://your-company.atlassian.net/wiki",
         "CONFLUENCE_USERNAME": "your.email@company.com",
         "CONFLUENCE_API_TOKEN": "your_confluence_api_token",
-        "CONFLUENCE_CUSTOM_HEADERS": "X-Confluence-Service=mcp-integration,X-Custom-Auth=confluence-token,X-ALB-Token=secret-token",
-        "JIRA_URL": "https://your-company.atlassian.net",
-        "JIRA_USERNAME": "your.email@company.com",
-        "JIRA_API_TOKEN": "your_jira_api_token",
-        "JIRA_CUSTOM_HEADERS": "X-Forwarded-User=service-account,X-Company-Service=mcp-atlassian,X-Jira-Client=mcp-integration"
+        "CONFLUENCE_CUSTOM_HEADERS": "X-Confluence-Service=mcp-integration,X-Custom-Auth=confluence-token,X-ALB-Token=secret-token"
       }
     }
   }
@@ -465,10 +426,10 @@ async def main():
             # Initialize the connection
             await session.initialize()
 
-            # Example: Get a Jira issue
+            # Example: Get a Confluence page
             result = await session.call_tool(
-                "jira_get_issue",
-                {"issue_key": "PROJ-123"}
+                "confluence_get_page",
+                {"page_id": "12345678"}
             )
             print(result)
 
@@ -528,55 +489,6 @@ For Confluence Server/DC, use:
       "env": {
         "CONFLUENCE_URL": "https://confluence.your-company.com",
         "CONFLUENCE_PERSONAL_TOKEN": "your_personal_token"
-      }
-    }
-  }
-}
-```
-
-**For Jira Cloud only:**
-
-```json
-{
-  "mcpServers": {
-    "mcp-atlassian": {
-      "command": "docker",
-      "args": [
-        "run",
-        "--rm",
-        "-i",
-        "-e", "JIRA_URL",
-        "-e", "JIRA_USERNAME",
-        "-e", "JIRA_API_TOKEN",
-        "ghcr.io/sooperset/mcp-atlassian:latest"
-      ],
-      "env": {
-        "JIRA_URL": "https://your-company.atlassian.net",
-        "JIRA_USERNAME": "your.email@company.com",
-        "JIRA_API_TOKEN": "your_api_token"
-      }
-    }
-  }
-}
-```
-
-For Jira Server/DC, use:
-```json
-{
-  "mcpServers": {
-    "mcp-atlassian": {
-      "command": "docker",
-      "args": [
-        "run",
-        "--rm",
-        "-i",
-        "-e", "JIRA_URL",
-        "-e", "JIRA_PERSONAL_TOKEN",
-        "ghcr.io/sooperset/mcp-atlassian:latest"
-      ],
-      "env": {
-        "JIRA_URL": "https://jira.your-company.com",
-        "JIRA_PERSONAL_TOKEN": "your_personal_token"
       }
     }
   }
@@ -699,12 +611,11 @@ Here's a complete example of setting up multi-user authentication with streamabl
 
 4. Required environment variables in `.env`:
    ```bash
-   JIRA_URL=https://your-company.atlassian.net
    CONFLUENCE_URL=https://your-company.atlassian.net/wiki
    ATLASSIAN_OAUTH_CLIENT_ID=your_oauth_app_client_id
    ATLASSIAN_OAUTH_CLIENT_SECRET=your_oauth_app_client_secret
    ATLASSIAN_OAUTH_REDIRECT_URI=http://localhost:8080/callback
-   ATLASSIAN_OAUTH_SCOPE=read:jira-work write:jira-work read:confluence-content.all write:confluence-content offline_access
+   ATLASSIAN_OAUTH_SCOPE=read:confluence-content.all offline_access
    ATLASSIAN_OAUTH_CLOUD_ID=your_cloud_id_from_setup_wizard
    ```
 
@@ -720,64 +631,14 @@ Here's a complete example of setting up multi-user authentication with streamabl
 
 ## Tools
 
-### Key Tools
-
-#### Jira Tools
-
-- `jira_get_issue`: Get details of a specific issue
-- `jira_search`: Search issues using JQL
-- `jira_create_issue`: Create a new issue
-- `jira_update_issue`: Update an existing issue
-- `jira_transition_issue`: Transition an issue to a new status
-- `jira_add_comment`: Add a comment to an issue
-
-#### Confluence Tools
+### Confluence Tools
 
 - `confluence_search`: Search Confluence content using CQL
 - `confluence_get_page`: Get content of a specific page
-- `confluence_create_page`: Create a new page
-- `confluence_update_page`: Update an existing page
-
-<details> <summary>View All Tools</summary>
-
-| Operation | Jira Tools                          | Confluence Tools               |
-|-----------|-------------------------------------|--------------------------------|
-| **Read**  | `jira_search`                       | `confluence_search`            |
-|           | `jira_get_issue`                    | `confluence_get_page`          |
-|           | `jira_get_all_projects`             | `confluence_get_page_children` |
-|           | `jira_get_project_issues`           | `confluence_get_comments`      |
-|           | `jira_get_worklog`                  | `confluence_get_labels`        |
-|           | `jira_get_transitions`              | `confluence_search_user`       |
-|           | `jira_search_fields`                |                                |
-|           | `jira_get_agile_boards`             |                                |
-|           | `jira_get_board_issues`             |                                |
-|           | `jira_get_sprints_from_board`       |                                |
-|           | `jira_get_sprint_issues`            |                                |
-|           | `jira_get_issue_link_types`         |                                |
-|           | `jira_batch_get_changelogs`*        |                                |
-|           | `jira_get_user_profile`             |                                |
-|           | `jira_download_attachments`         |                                |
-|           | `jira_get_project_versions`         |                                |
-| **Write** | `jira_create_issue`                 | `confluence_create_page`       |
-|           | `jira_update_issue`                 | `confluence_update_page`       |
-|           | `jira_delete_issue`                 | `confluence_delete_page`       |
-|           | `jira_batch_create_issues`          | `confluence_add_label`         |
-|           | `jira_add_comment`                  | `confluence_add_comment`       |
-|           | `jira_transition_issue`             |                                |
-|           | `jira_add_worklog`                  |                                |
-|           | `jira_link_to_epic`                 |                                |
-|           | `jira_create_sprint`                |                                |
-|           | `jira_update_sprint`                |                                |
-|           | `jira_create_issue_link`            |                                |
-|           | `jira_remove_issue_link`            |                                |
-|           | `jira_create_version`               |                                |
-|           | `jira_batch_create_versions`        |                                |
-
-</details>
-
-*Tool only available on Jira Cloud
-
-</details>
+- `confluence_get_page_children`: Get child pages of a specific page
+- `confluence_get_comments`: Get comments for a page
+- `confluence_get_labels`: Get labels for a page
+- `confluence_search_user`: Search for users
 
 ### Tool Filtering and Access Control
 
@@ -787,13 +648,13 @@ The server provides two ways to control tool access:
 
    ```bash
    # Via environment variable
-   ENABLED_TOOLS="confluence_search,jira_get_issue,jira_search"
+   ENABLED_TOOLS="confluence_search,confluence_get_page"
 
    # Or via command line flag
-   docker run ... --enabled-tools "confluence_search,jira_get_issue,jira_search" ...
+   docker run ... --enabled-tools "confluence_search,confluence_get_page" ...
    ```
 
-2. **Read/Write Control**: Tools are categorized as read or write operations. When `READ_ONLY_MODE` is enabled, only read operations are available regardless of `ENABLED_TOOLS` setting.
+2. **Read/Write Control**: The server is now in a permanent read-only mode. All write operations have been disabled.
 
 ## Troubleshooting & Debugging
 
@@ -803,8 +664,8 @@ The server provides two ways to control tool access:
     - For Cloud: Check your API tokens (not your account password)
     - For Server/Data Center: Verify your personal access token is valid and not expired
     - For older Confluence servers: Some older versions require basic authentication with `CONFLUENCE_USERNAME` and `CONFLUENCE_API_TOKEN` (where token is your password)
-- **SSL Certificate Issues**: If using Server/Data Center and encounter SSL errors, set `CONFLUENCE_SSL_VERIFY=false` or `JIRA_SSL_VERIFY=false`
-- **Permission Errors**: Ensure your Atlassian account has sufficient permissions to access the spaces/projects
+- **SSL Certificate Issues**: If using Server/Data Center and encounter SSL errors, set `CONFLUENCE_SSL_VERIFY=false`
+- **Permission Errors**: Ensure your Atlassian account has sufficient permissions to access the spaces
 - **Custom Headers Issues**: See the ["Debugging Custom Headers"](#debugging-custom-headers) section below to analyze and resolve issues with custom headers
 
 ### Debugging Custom Headers
@@ -820,25 +681,23 @@ To verify custom headers are being applied correctly:
 
 2. **Check Header Parsing**: Custom headers appear in logs with masked values for security:
    ```
-   DEBUG Custom headers applied: {'X-Forwarded-User': '***', 'X-ALB-Token': '***'}
+   DEBUG Custom headers applied: {'X-Custom-Header': '***'}
    ```
 
 3. **Verify Service-Specific Headers**: Check logs to confirm the right headers are being used:
    ```
-   DEBUG Jira request headers: service-specific headers applied
    DEBUG Confluence request headers: service-specific headers applied
    ```
 
 4. **Test Header Format**: Ensure your header string format is correct:
    ```bash
    # Correct format
-   JIRA_CUSTOM_HEADERS=X-Custom=value1,X-Other=value2
    CONFLUENCE_CUSTOM_HEADERS=X-Custom=value1,X-Other=value2
 
    # Incorrect formats (will be ignored)
-   JIRA_CUSTOM_HEADERS="X-Custom=value1,X-Other=value2"  # Extra quotes
-   JIRA_CUSTOM_HEADERS=X-Custom: value1,X-Other: value2  # Colon instead of equals
-   JIRA_CUSTOM_HEADERS=X-Custom = value1               # Spaces around equals
+   CONFLUENCE_CUSTOM_HEADERS="X-Custom=value1,X-Other=value2"  # Extra quotes
+   CONFLUENCE_CUSTOM_HEADERS=X-Custom: value1,X-Other: value2  # Colon instead of equals
+   CONFLUENCE_CUSTOM_HEADERS=X-Custom = value1               # Spaces around equals
    ```
 
 **Security Note**: Header values containing sensitive information (tokens, passwords) are automatically masked in logs to prevent accidental exposure.
