@@ -57,7 +57,6 @@ async def main_lifespan(app: FastMCP[MainAppContext]) -> AsyncIterator[dict]:
             logger.error(f"Failed to load Confluence configuration: {e}", exc_info=True)
 
     app_context = MainAppContext(
-        full_jira_config=None,
         full_confluence_config=loaded_confluence_config,
         read_only=read_only,
         enabled_tools=enabled_tools,

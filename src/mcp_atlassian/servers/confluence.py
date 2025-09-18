@@ -5,13 +5,10 @@ import logging
 from typing import Annotated
 
 from fastmcp import Context, FastMCP
-from pydantic import BeforeValidator, Field
+from pydantic import Field
 
 from mcp_atlassian.exceptions import MCPAtlassianAuthenticationError
 from mcp_atlassian.servers.dependencies import get_confluence_fetcher
-from mcp_atlassian.utils.decorators import (
-    check_write_access,
-)
 
 logger = logging.getLogger(__name__)
 
