@@ -16,8 +16,6 @@ from starlette.testclient import TestClient
 
 from mcp_atlassian.confluence import ConfluenceFetcher
 from mcp_atlassian.confluence.config import ConfluenceConfig
-from mcp_atlassian.jira import JiraFetcher
-from mcp_atlassian.jira.config import JiraConfig
 from mcp_atlassian.servers.context import MainAppContext
 from mcp_atlassian.servers.main import (
     AtlassianMCP,
@@ -27,7 +25,6 @@ from mcp_atlassian.servers.main import (
 )
 from tests.utils.factories import (
     ConfluencePageFactory,
-    JiraIssueFactory,
 )
 from tests.utils.mocks import MockEnvironment, MockFastMCP
 
@@ -40,15 +37,6 @@ class TestMCPProtocolIntegration:
     """Test suite for MCP protocol integration with AtlassianMCP server."""
 
     @pytest.fixture
-    async def mock_jira_config(self):
-        """Create a mock Jira configuration."""
-        config = MagicMock(spec=JiraConfig)
-        config.is_auth_configured.return_value = True
-        config.url = "https://test.atlassian.net"
-        config.auth_type = "oauth"
-        return config
-
-    @pytest.fixture
     async def mock_confluence_config(self):
         """Create a mock Confluence configuration."""
         config = MagicMock(spec=ConfluenceConfig)
@@ -56,20 +44,6 @@ class TestMCPProtocolIntegration:
         config.url = "https://test.atlassian.net/wiki"
         config.auth_type = "oauth"
         return config
-
-    @pytest.fixture
-    async def mock_jira_fetcher(self):
-        """Create a mock Jira fetcher."""
-        fetcher = MagicMock(spec=JiraFetcher)
-        fetcher.get_issue.return_value = JiraIssueFactory.create()
-        fetcher.search_issues.return_value = {
-            "issues": [
-                JiraIssueFactory.create("TEST-1"),
-                JiraIssueFactory.create("TEST-2"),
-            ],
-            "total": 2,
-        }
-        return fetcher
 
     @pytest.fixture
     async def mock_confluence_fetcher(self):
@@ -93,24 +67,17 @@ class TestMCPProtocolIntegration:
         return server
 
     async def test_tool_discovery_with_full_configuration(
-        self, atlassian_mcp_server, mock_jira_config, mock_confluence_config
+        self, atlassian_mcp_server, mock_confluence_config
     ):
-        """Test tool discovery when both Jira and Confluence are fully configured."""
+        """Test tool discovery when Confluence is fully configured."""
         with MockEnvironment.basic_auth_env():
             # Mock the configuration loading
-            with (
-                patch(
-                    "mcp_atlassian.jira.config.JiraConfig.from_env",
-                    return_value=mock_jira_config,
-                ),
-                patch(
-                    "mcp_atlassian.confluence.config.ConfluenceConfig.from_env",
-                    return_value=mock_confluence_config,
-                ),
+            with patch(
+                "mcp_atlassian.confluence.config.ConfluenceConfig.from_env",
+                return_value=mock_confluence_config,
             ):
                 # Create app context
                 app_context = MainAppContext(
-                    full_jira_config=mock_jira_config,
                     full_confluence_config=mock_confluence_config,
                     read_only=False,
                     enabled_tools=None,
@@ -127,25 +94,6 @@ class TestMCPProtocolIntegration:
                 # Mock get_tools to return sample tools
                 async def mock_get_tools():
                     tools = {}
-                    # Add sample Jira tools
-                    for tool_name in [
-                        "jira_get_issue",
-                        "jira_create_issue",
-                        "jira_search_issues",
-                    ]:
-                        tool = MagicMock(spec=FastMCPTool)
-                        tool.tags = (
-                            {"jira", "read"}
-                            if "get" in tool_name or "search" in tool_name
-                            else {"jira", "write"}
-                        )
-                        tool.to_mcp_tool.return_value = MCPTool(
-                            name=tool_name,
-                            description=f"Tool {tool_name}",
-                            inputSchema={"type": "object", "properties": {}},
-                        )
-                        tools[tool_name] = tool
-
                     # Add sample Confluence tools
                     for tool_name in ["confluence_get_page", "confluence_create_page"]:
                         tool = MagicMock(spec=FastMCPTool)
@@ -170,21 +118,17 @@ class TestMCPProtocolIntegration:
 
                 # Assert all tools are available
                 tool_names = [tool.name for tool in tools]
-                assert "jira_get_issue" in tool_names
-                assert "jira_create_issue" in tool_names
-                assert "jira_search_issues" in tool_names
                 assert "confluence_get_page" in tool_names
                 assert "confluence_create_page" in tool_names
-                assert len(tools) == 5
+                assert len(tools) == 2
 
     async def test_tool_filtering_read_only_mode(
-        self, atlassian_mcp_server, mock_jira_config, mock_confluence_config
+        self, atlassian_mcp_server, mock_confluence_config
     ):
         """Test tool filtering when read-only mode is enabled."""
         with MockEnvironment.basic_auth_env():
             # Create app context with read-only mode
             app_context = MainAppContext(
-                full_jira_config=mock_jira_config,
                 full_confluence_config=mock_confluence_config,
                 read_only=True,  # Enable read-only mode
                 enabled_tools=None,
@@ -202,24 +146,12 @@ class TestMCPProtocolIntegration:
             async def mock_get_tools():
                 tools = {}
                 # Add mix of read and write tools
-                read_tools = [
-                    "jira_get_issue",
-                    "jira_search_issues",
-                    "confluence_get_page",
-                ]
-                write_tools = [
-                    "jira_create_issue",
-                    "jira_update_issue",
-                    "confluence_create_page",
-                ]
+                read_tools = ["confluence_get_page"]
+                write_tools = ["confluence_create_page"]
 
                 for tool_name in read_tools:
                     tool = MagicMock(spec=FastMCPTool)
-                    tool.tags = (
-                        {"jira", "read"}
-                        if "jira" in tool_name
-                        else {"confluence", "read"}
-                    )
+                    tool.tags = {"confluence", "read"}
                     tool.to_mcp_tool.return_value = MCPTool(
                         name=tool_name,
                         description=f"Tool {tool_name}",
@@ -229,11 +161,7 @@ class TestMCPProtocolIntegration:
 
                 for tool_name in write_tools:
                     tool = MagicMock(spec=FastMCPTool)
-                    tool.tags = (
-                        {"jira", "write"}
-                        if "jira" in tool_name
-                        else {"confluence", "write"}
-                    )
+                    tool.tags = {"confluence", "write"}
                     tool.to_mcp_tool.return_value = MCPTool(
                         name=tool_name,
                         description=f"Tool {tool_name}",
@@ -250,23 +178,18 @@ class TestMCPProtocolIntegration:
 
             # Assert only read tools are available
             tool_names = [tool.name for tool in tools]
-            assert "jira_get_issue" in tool_names
-            assert "jira_search_issues" in tool_names
             assert "confluence_get_page" in tool_names
-            assert "jira_create_issue" not in tool_names
-            assert "jira_update_issue" not in tool_names
             assert "confluence_create_page" not in tool_names
-            assert len(tools) == 3
+            assert len(tools) == 1
 
     async def test_tool_filtering_with_enabled_tools(
-        self, atlassian_mcp_server, mock_jira_config, mock_confluence_config
+        self, atlassian_mcp_server, mock_confluence_config
     ):
         """Test tool filtering with specific enabled tools list."""
         with MockEnvironment.basic_auth_env():
             # Create app context with specific enabled tools
-            enabled_tools = ["jira_get_issue", "jira_search_issues"]
+            enabled_tools = ["confluence_get_page"]
             app_context = MainAppContext(
-                full_jira_config=mock_jira_config,
                 full_confluence_config=mock_confluence_config,
                 read_only=False,
                 enabled_tools=enabled_tools,
@@ -284,27 +207,17 @@ class TestMCPProtocolIntegration:
             async def mock_get_tools():
                 tools = {}
                 all_tools = [
-                    "jira_get_issue",
-                    "jira_create_issue",
-                    "jira_search_issues",
                     "confluence_get_page",
                     "confluence_create_page",
                 ]
 
                 for tool_name in all_tools:
                     tool = MagicMock(spec=FastMCPTool)
-                    if "jira" in tool_name:
-                        tool.tags = (
-                            {"jira", "read"}
-                            if "get" in tool_name or "search" in tool_name
-                            else {"jira", "write"}
-                        )
-                    else:
-                        tool.tags = (
-                            {"confluence", "read"}
-                            if "get" in tool_name
-                            else {"confluence", "write"}
-                        )
+                    tool.tags = (
+                        {"confluence", "read"}
+                        if "get" in tool_name
+                        else {"confluence", "write"}
+                    )
                     tool.to_mcp_tool.return_value = MCPTool(
                         name=tool_name,
                         description=f"Tool {tool_name}",
@@ -321,19 +234,15 @@ class TestMCPProtocolIntegration:
 
             # Assert only enabled tools are available
             tool_names = [tool.name for tool in tools]
-            assert "jira_get_issue" in tool_names
-            assert "jira_search_issues" in tool_names
-            assert "jira_create_issue" not in tool_names
-            assert "confluence_get_page" not in tool_names
+            assert "confluence_get_page" in tool_names
             assert "confluence_create_page" not in tool_names
-            assert len(tools) == 2
+            assert len(tools) == 1
 
     async def test_tool_filtering_service_not_configured(self, atlassian_mcp_server):
         """Test tool filtering when services are not configured."""
         with MockEnvironment.clean_env():
             # Create app context with no configurations
             app_context = MainAppContext(
-                full_jira_config=None,  # Jira not configured
                 full_confluence_config=None,  # Confluence not configured
                 read_only=False,
                 enabled_tools=None,
@@ -351,26 +260,17 @@ class TestMCPProtocolIntegration:
             async def mock_get_tools():
                 tools = {}
                 all_tools = [
-                    "jira_get_issue",
-                    "jira_create_issue",
                     "confluence_get_page",
                     "confluence_create_page",
                 ]
 
                 for tool_name in all_tools:
                     tool = MagicMock(spec=FastMCPTool)
-                    if "jira" in tool_name:
-                        tool.tags = (
-                            {"jira", "read"}
-                            if "get" in tool_name
-                            else {"jira", "write"}
-                        )
-                    else:
-                        tool.tags = (
-                            {"confluence", "read"}
-                            if "get" in tool_name
-                            else {"confluence", "write"}
-                        )
+                    tool.tags = (
+                        {"confluence", "read"}
+                        if "get" in tool_name
+                        else {"confluence", "write"}
+                    )
                     tool.to_mcp_tool.return_value = MCPTool(
                         name=tool_name,
                         description=f"Tool {tool_name}",
@@ -560,13 +460,12 @@ class TestMCPProtocolIntegration:
         assert response.status_code == 200
 
     async def test_concurrent_tool_execution(
-        self, atlassian_mcp_server, mock_jira_config, mock_confluence_config
+        self, atlassian_mcp_server, mock_confluence_config
     ):
         """Test concurrent execution of multiple tools."""
         with MockEnvironment.basic_auth_env():
             # Create app context
             app_context = MainAppContext(
-                full_jira_config=mock_jira_config,
                 full_confluence_config=mock_confluence_config,
                 read_only=False,
                 enabled_tools=None,
@@ -577,12 +476,6 @@ class TestMCPProtocolIntegration:
 
             # Mock tool implementations
             import anyio
-
-            async def mock_jira_get_issue(ctx: Context, issue_key: str):
-                execution_order.append(f"jira_get_issue_{issue_key}_start")
-                await anyio.sleep(0.1)  # Simulate API call
-                execution_order.append(f"jira_get_issue_{issue_key}_end")
-                return json.dumps({"key": issue_key, "summary": f"Issue {issue_key}"})
 
             async def mock_confluence_get_page(ctx: Context, page_id: str):
                 execution_order.append(f"confluence_get_page_{page_id}_start")
@@ -599,8 +492,6 @@ class TestMCPProtocolIntegration:
             mock_fastmcp.request_context = request_context
             ctx = Context(fastmcp=mock_fastmcp)
 
-            # Execute tools concurrently using anyio for backend compatibility
-
             # Execute tools concurrently
             async def run_all_tools():
                 results = []
@@ -611,13 +502,11 @@ class TestMCPProtocolIntegration:
                         result = await coro
                         result_futures.append((index, result))
 
-                    tg.start_soon(run_and_store, mock_jira_get_issue(ctx, "TEST-1"), 0)
-                    tg.start_soon(run_and_store, mock_jira_get_issue(ctx, "TEST-2"), 1)
                     tg.start_soon(
-                        run_and_store, mock_confluence_get_page(ctx, "123"), 2
+                        run_and_store, mock_confluence_get_page(ctx, "123"), 0
                     )
                     tg.start_soon(
-                        run_and_store, mock_confluence_get_page(ctx, "456"), 3
+                        run_and_store, mock_confluence_get_page(ctx, "456"), 1
                     )
 
                 # Sort results by original index
@@ -627,19 +516,9 @@ class TestMCPProtocolIntegration:
             results = await run_all_tools()
 
             # Verify results
-            assert len(results) == 4
-            assert json.loads(results[0])["key"] == "TEST-1"
-            assert json.loads(results[1])["key"] == "TEST-2"
-            assert json.loads(results[2])["id"] == "123"
-            assert json.loads(results[3])["id"] == "456"
-
-            # Verify concurrent execution (Confluence tasks should complete before Jira)
-            assert execution_order.index(
-                "confluence_get_page_123_end"
-            ) < execution_order.index("jira_get_issue_TEST-1_end")
-            assert execution_order.index(
-                "confluence_get_page_456_end"
-            ) < execution_order.index("jira_get_issue_TEST-2_end")
+            assert len(results) == 2
+            assert json.loads(results[0])["id"] == "123"
+            assert json.loads(results[1])["id"] == "456"
 
     async def test_error_propagation_through_middleware(self):
         """Test error propagation through the middleware chain."""
@@ -673,19 +552,10 @@ class TestMCPProtocolIntegration:
         """Test lifespan context initialization with various configurations."""
         # Test with full configuration
         with MockEnvironment.basic_auth_env():
-            with (
-                patch(
-                    "mcp_atlassian.jira.config.JiraConfig.from_env"
-                ) as mock_jira_config,
-                patch(
-                    "mcp_atlassian.confluence.config.ConfluenceConfig.from_env"
-                ) as mock_conf_config,
-            ):
+            with patch(
+                "mcp_atlassian.confluence.config.ConfluenceConfig.from_env"
+            ) as mock_conf_config:
                 # Configure mocks
-                jira_config = MagicMock()
-                jira_config.is_auth_configured.return_value = True
-                mock_jira_config.return_value = jira_config
-
                 conf_config = MagicMock()
                 conf_config.is_auth_configured.return_value = True
                 mock_conf_config.return_value = conf_config
@@ -694,60 +564,19 @@ class TestMCPProtocolIntegration:
                 app = MagicMock()
                 async with main_lifespan(app) as context:
                     app_context = context["app_lifespan_context"]
-                    assert app_context.full_jira_config == jira_config
                     assert app_context.full_confluence_config == conf_config
                     assert app_context.read_only is False
                     assert app_context.enabled_tools is None
-
-    async def test_lifespan_with_partial_configuration(self):
-        """Test lifespan with only Jira configured."""
-        env_vars = {
-            "JIRA_URL": "https://test.atlassian.net",
-            "JIRA_USERNAME": "test@example.com",
-            "JIRA_API_TOKEN": "test-token",
-        }
-
-        with patch.dict(os.environ, env_vars, clear=False):
-            with (
-                patch(
-                    "mcp_atlassian.jira.config.JiraConfig.from_env"
-                ) as mock_jira_config,
-                patch(
-                    "mcp_atlassian.confluence.config.ConfluenceConfig.from_env"
-                ) as mock_conf_config,
-            ):
-                # Configure mocks
-                jira_config = MagicMock()
-                jira_config.is_auth_configured.return_value = True
-                mock_jira_config.return_value = jira_config
-
-                # Confluence not configured
-                mock_conf_config.side_effect = Exception("No Confluence config")
-
-                # Run lifespan
-                app = MagicMock()
-                async with main_lifespan(app) as context:
-                    app_context = context["app_lifespan_context"]
-                    assert app_context.full_jira_config == jira_config
-                    assert app_context.full_confluence_config is None
 
     async def test_lifespan_with_read_only_mode(self):
         """Test lifespan with read-only mode enabled."""
         with MockEnvironment.basic_auth_env():
             with patch.dict(os.environ, {"READ_ONLY_MODE": "true"}):
-                with patch(
-                    "mcp_atlassian.jira.config.JiraConfig.from_env"
-                ) as mock_jira_config:
-                    # Configure mock
-                    jira_config = MagicMock()
-                    jira_config.is_auth_configured.return_value = True
-                    mock_jira_config.return_value = jira_config
-
-                    # Run lifespan
-                    app = MagicMock()
-                    async with main_lifespan(app) as context:
-                        app_context = context["app_lifespan_context"]
-                        assert app_context.read_only is True
+                # Run lifespan
+                app = MagicMock()
+                async with main_lifespan(app) as context:
+                    app_context = context["app_lifespan_context"]
+                    assert app_context.read_only is True
 
     async def test_lifespan_with_enabled_tools(self):
         """Test lifespan with specific enabled tools."""
@@ -755,26 +584,16 @@ class TestMCPProtocolIntegration:
             with patch.dict(
                 os.environ,
                 {
-                    "ENABLED_TOOLS": "jira_get_issue,jira_search_issues,confluence_get_page"
+                    "ENABLED_TOOLS": "confluence_get_page"
                 },
             ):
-                with patch(
-                    "mcp_atlassian.jira.config.JiraConfig.from_env"
-                ) as mock_jira_config:
-                    # Configure mock
-                    jira_config = MagicMock()
-                    jira_config.is_auth_configured.return_value = True
-                    mock_jira_config.return_value = jira_config
-
-                    # Run lifespan
-                    app = MagicMock()
-                    async with main_lifespan(app) as context:
-                        app_context = context["app_lifespan_context"]
-                        assert app_context.enabled_tools == [
-                            "jira_get_issue",
-                            "jira_search_issues",
-                            "confluence_get_page",
-                        ]
+                # Run lifespan
+                app = MagicMock()
+                async with main_lifespan(app) as context:
+                    app_context = context["app_lifespan_context"]
+                    assert app_context.enabled_tools == [
+                        "confluence_get_page",
+                    ]
 
     async def test_health_check_endpoint(self, atlassian_mcp_server):
         """Test the health check endpoint."""
@@ -796,18 +615,15 @@ class TestMCPProtocolIntegration:
         assert response.json() == {"status": "ok"}
 
     async def test_combined_filtering_scenarios(
-        self, atlassian_mcp_server, mock_jira_config
+        self, atlassian_mcp_server
     ):
         """Test combined filtering: read-only mode + enabled tools + service availability."""
         with MockEnvironment.basic_auth_env():
             # Create app context with multiple constraints
             app_context = MainAppContext(
-                full_jira_config=mock_jira_config,
                 full_confluence_config=None,  # Confluence not configured
                 read_only=True,  # Read-only mode
                 enabled_tools=[
-                    "jira_get_issue",
-                    "jira_create_issue",
                     "confluence_get_page",
                 ],  # Mix of tools
             )
@@ -824,12 +640,6 @@ class TestMCPProtocolIntegration:
             async def mock_get_tools():
                 tools = {}
                 tool_configs = [
-                    ("jira_get_issue", {"jira", "read"}),  # Should be included
-                    ("jira_create_issue", {"jira", "write"}),  # Excluded by read-only
-                    (
-                        "jira_search_issues",
-                        {"jira", "read"},
-                    ),  # Excluded by enabled_tools
                     (
                         "confluence_get_page",
                         {"confluence", "read"},
@@ -853,9 +663,8 @@ class TestMCPProtocolIntegration:
             # Get filtered tools
             tools = await atlassian_mcp_server._mcp_list_tools()
 
-            # Only jira_get_issue should pass all filters
-            tool_names = [tool.name for tool in tools]
-            assert tool_names == ["jira_get_issue"]
+            # No tools should pass
+            assert tools == []
 
     async def test_request_context_missing(self, atlassian_mcp_server):
         """Test handling when request context is missing."""

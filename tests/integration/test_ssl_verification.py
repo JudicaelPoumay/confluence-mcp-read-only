@@ -4,12 +4,9 @@ import os
 from unittest.mock import MagicMock, patch
 
 import pytest
-from requests.exceptions import SSLError
 from requests.sessions import Session
 
 from mcp_atlassian.confluence.config import ConfluenceConfig
-from mcp_atlassian.jira.client import JiraClient
-from mcp_atlassian.jira.config import JiraConfig
 from mcp_atlassian.utils.ssl import SSLIgnoreAdapter, configure_ssl_verification
 from tests.utils.base import BaseAuthTest
 from tests.utils.mocks import MockEnvironment
@@ -55,10 +52,6 @@ class TestSSLVerificationEnhanced(BaseAuthTest):
     def test_ssl_verification_enabled_by_default(self):
         """Test that SSL verification is enabled by default."""
         with MockEnvironment.basic_auth_env():
-            # For Jira
-            jira_config = JiraConfig.from_env()
-            assert jira_config.ssl_verify is True
-
             # For Confluence
             confluence_config = ConfluenceConfig.from_env()
             assert confluence_config.ssl_verify is True
@@ -67,15 +60,10 @@ class TestSSLVerificationEnhanced(BaseAuthTest):
     def test_ssl_verification_disabled_via_env(self):
         """Test SSL verification can be disabled via environment variables."""
         with MockEnvironment.basic_auth_env() as env_vars:
-            env_vars["JIRA_SSL_VERIFY"] = "false"
             env_vars["CONFLUENCE_SSL_VERIFY"] = "false"
 
-            # For Jira - need to reload config after env change
+            # For Confluence
             with patch.dict(os.environ, env_vars):
-                jira_config = JiraConfig.from_env()
-                assert jira_config.ssl_verify is False
-
-                # For Confluence
                 confluence_config = ConfluenceConfig.from_env()
                 assert confluence_config.ssl_verify is False
 
@@ -86,9 +74,8 @@ class TestSSLVerificationEnhanced(BaseAuthTest):
 
         # Configure for multiple domains
         urls = [
-            "https://domain1.atlassian.net",
-            "https://domain2.atlassian.net/wiki",
-            "https://custom.domain.com/jira",
+            "https://domain1.atlassian.net/wiki",
+            "https://custom.domain.com/confluence",
         ]
 
         for url in urls:
@@ -98,24 +85,7 @@ class TestSSLVerificationEnhanced(BaseAuthTest):
 
         # Verify all domains have SSL adapters
         assert "https://domain1.atlassian.net" in session.adapters
-        assert "https://domain2.atlassian.net" in session.adapters
         assert "https://custom.domain.com" in session.adapters
-
-    @pytest.mark.integration
-    def test_ssl_error_handling_with_invalid_cert(self, monkeypatch):
-        """Test SSL error handling when certificate validation fails."""
-        # Mock the Jira class to simulate SSL error
-        mock_jira = MagicMock()
-        mock_jira.side_effect = SSLError("Certificate verification failed")
-        monkeypatch.setattr("mcp_atlassian.jira.client.Jira", mock_jira)
-
-        with MockEnvironment.basic_auth_env():
-            config = JiraConfig.from_env()
-            config.ssl_verify = True  # Ensure SSL verification is on
-
-            # Creating client should raise SSL error
-            with pytest.raises(SSLError, match="Certificate verification failed"):
-                JiraClient(config=config)
 
     @pytest.mark.integration
     def test_ssl_verification_with_custom_ca_bundle(self):
@@ -123,19 +93,10 @@ class TestSSLVerificationEnhanced(BaseAuthTest):
         with MockEnvironment.basic_auth_env() as env_vars:
             # Set custom CA bundle path
             custom_ca_path = "/path/to/custom/ca-bundle.crt"
-            env_vars["JIRA_SSL_VERIFY"] = custom_ca_path
             env_vars["CONFLUENCE_SSL_VERIFY"] = custom_ca_path
 
-            # For Jira - need to reload config after env change
+            # For Confluence
             with patch.dict(os.environ, env_vars):
-                jira_config = JiraConfig.from_env()
-                # Note: Current implementation only supports boolean ssl_verify
-                # Custom CA bundle paths are not supported in the config parsing
-                assert (
-                    jira_config.ssl_verify is True
-                )  # Any non-false value becomes True
-
-                # For Confluence
                 confluence_config = ConfluenceConfig.from_env()
                 assert (
                     confluence_config.ssl_verify is True
@@ -149,8 +110,8 @@ class TestSSLVerificationEnhanced(BaseAuthTest):
 
         # Configure with SSL verification enabled
         configure_ssl_verification(
-            service_name="Jira",
-            url="https://test.atlassian.net",
+            service_name="Confluence",
+            url="https://test.atlassian.net/wiki",
             session=session,
             ssl_verify=True,  # SSL verification enabled
         )
@@ -166,8 +127,8 @@ class TestSSLVerificationEnhanced(BaseAuthTest):
 
         # Configure SSL for a domain
         configure_ssl_verification(
-            service_name="Jira",
-            url="https://test.atlassian.net",
+            service_name="Confluence",
+            url="https://test.atlassian.net/wiki",
             session=session,
             ssl_verify=False,
         )
@@ -178,8 +139,8 @@ class TestSSLVerificationEnhanced(BaseAuthTest):
 
         # Configure again - should not create duplicate adapters
         configure_ssl_verification(
-            service_name="Jira",
-            url="https://test.atlassian.net",
+            service_name="Confluence",
+            url="https://test.atlassian.net/wiki",
             session=session,
             ssl_verify=False,
         )
@@ -193,45 +154,8 @@ class TestSSLVerificationEnhanced(BaseAuthTest):
         """Test SSL verification works correctly with OAuth configuration."""
         with MockEnvironment.oauth_env() as env_vars:
             # Add SSL configuration
-            env_vars["JIRA_SSL_VERIFY"] = "false"
             env_vars["CONFLUENCE_SSL_VERIFY"] = "false"
 
             # OAuth config should still respect SSL settings
-            # Need to reload config after env change
             with patch.dict(os.environ, env_vars):
-                # Note: OAuth flow would need additional setup, but we're testing config only
-                assert os.environ.get("JIRA_SSL_VERIFY") == "false"
                 assert os.environ.get("CONFLUENCE_SSL_VERIFY") == "false"
-
-
-@pytest.mark.integration
-def test_configure_ssl_verification_with_real_jira_url():
-    """Test SSL verification configuration with real Jira URL from environment."""
-    # Get the URL from the environment
-    url = os.getenv("JIRA_URL")
-    if not url:
-        pytest.skip("JIRA_URL not set in environment")
-
-    # Create a real session
-    session = Session()
-    original_adapters_count = len(session.adapters)
-
-    # Mock the SSL_VERIFY value to be False for this test
-    with patch.dict(os.environ, {"JIRA_SSL_VERIFY": "false"}):
-        # Configure SSL verification - explicitly pass ssl_verify=False
-        configure_ssl_verification(
-            service_name="Jira",
-            url=url,
-            session=session,
-            ssl_verify=False,
-        )
-
-        # Extract domain from URL (remove protocol and path)
-        domain = url.split("://")[1].split("/")[0]
-
-        # Verify the adapters are mounted correctly
-        assert len(session.adapters) == original_adapters_count + 2
-        assert f"https://{domain}" in session.adapters
-        assert f"http://{domain}" in session.adapters
-        assert isinstance(session.adapters[f"https://{domain}"], SSLIgnoreAdapter)
-        assert isinstance(session.adapters[f"http://{domain}"], SSLIgnoreAdapter)
