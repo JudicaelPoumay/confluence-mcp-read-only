@@ -26,12 +26,12 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
         )
         assert config.client_id == "test-client-id"
         assert config.client_secret == "test-client-secret"
         assert config.redirect_uri == "https://example.com/callback"
-        assert config.scope == "read:jira-work write:jira-work"
+        assert config.scope == "read:confluence-content.all offline_access"
         assert config.cloud_id is None
         assert config.refresh_token is None
         assert config.access_token is None
@@ -43,7 +43,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
             cloud_id="test-cloud-id",
             refresh_token="test-refresh-token",
             access_token="test-access-token",
@@ -61,7 +61,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
         )
         assert config.is_token_expired is True
 
@@ -71,7 +71,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
             access_token="test-access-token",
             expires_at=time.time() - 100,  # Expired 100 seconds ago
         )
@@ -83,7 +83,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
             access_token="test-access-token",
             expires_at=time.time() + (TOKEN_EXPIRY_MARGIN - 10),  # Expires soon
         )
@@ -95,7 +95,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
             access_token="test-access-token",
             expires_at=time.time() + 3600,  # Expires in 1 hour
         )
@@ -107,7 +107,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
         )
         url = config.get_authorization_url(state="test-state")
 
@@ -120,7 +120,7 @@ class TestOAuthConfig:
             == "https://auth.atlassian.com/authorize"
         )
         assert query_params["client_id"] == ["test-client-id"]
-        assert query_params["scope"] == ["read:jira-work write:jira-work"]
+        assert query_params["scope"] == ["read:confluence-content.all offline_access"]
         assert query_params["redirect_uri"] == ["https://example.com/callback"]
         assert query_params["response_type"] == ["code"]
         assert query_params["state"] == ["test-state"]
@@ -145,7 +145,7 @@ class TestOAuthConfig:
                     client_id="test-client-id",
                     client_secret="test-client-secret",
                     redirect_uri="https://example.com/callback",
-                    scope="read:jira-work write:jira-work",
+                    scope="read:confluence-content.all offline_access",
                 )
                 result = config.exchange_code_for_tokens("test-code")
 
@@ -169,7 +169,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
         )
         result = config.exchange_code_for_tokens("test-code")
 
@@ -196,7 +196,7 @@ class TestOAuthConfig:
                 client_id="test-client-id",
                 client_secret="test-client-secret",
                 redirect_uri="https://example.com/callback",
-                scope="read:jira-work write:jira-work",
+                scope="read:confluence-content.all offline_access",
                 refresh_token="old-refresh-token",
             )
             result = config.refresh_access_token()
@@ -217,7 +217,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
         )
         result = config.refresh_access_token()
 
@@ -231,7 +231,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
             access_token="test-access-token",
             expires_at=time.time() + 3600,  # Expires in 1 hour
         )
@@ -251,7 +251,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
             refresh_token="test-refresh-token",
             access_token="test-access-token",
             expires_at=time.time() - 100,  # Expired 100 seconds ago
@@ -271,7 +271,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
             refresh_token="test-refresh-token",
             access_token="test-access-token",
             expires_at=time.time() - 100,  # Expired 100 seconds ago
@@ -295,7 +295,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
             access_token="test-access-token",
         )
         config._get_cloud_id()
@@ -313,7 +313,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
         )
         config._get_cloud_id()
 
@@ -327,7 +327,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
         )
         username = config._get_keyring_username()
 
@@ -342,7 +342,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
             cloud_id="test-cloud-id",
             refresh_token="test-refresh-token",
             access_token="test-access-token",
@@ -375,7 +375,7 @@ class TestOAuthConfig:
             client_id="test-client-id",
             client_secret="test-client-secret",
             redirect_uri="https://example.com/callback",
-            scope="read:jira-work write:jira-work",
+            scope="read:confluence-content.all offline_access",
             cloud_id="test-cloud-id",
             refresh_token="test-refresh-token",
             access_token="test-access-token",
@@ -400,7 +400,7 @@ class TestOAuthConfig:
                 client_id="test-client-id",
                 client_secret="test-client-secret",
                 redirect_uri="https://example.com/callback",
-                scope="read:jira-work write:jira-work",
+                scope="read:confluence-content.all offline_access",
                 cloud_id="test-cloud-id",
                 refresh_token="test-refresh-token",
                 access_token="test-access-token",
@@ -548,7 +548,7 @@ class TestOAuthConfig:
             "ATLASSIAN_OAUTH_CLIENT_ID": "env-client-id",
             "ATLASSIAN_OAUTH_CLIENT_SECRET": "env-client-secret",
             "ATLASSIAN_OAUTH_REDIRECT_URI": "https://example.com/callback",
-            "ATLASSIAN_OAUTH_SCOPE": "read:jira-work",
+            "ATLASSIAN_OAUTH_SCOPE": "read:confluence-content.all offline_access",
             "ATLASSIAN_OAUTH_CLOUD_ID": "env-cloud-id",
         }.get(key, default)
 
@@ -569,7 +569,7 @@ class TestOAuthConfig:
             assert config.client_id == "env-client-id"
             assert config.client_secret == "env-client-secret"
             assert config.redirect_uri == "https://example.com/callback"
-            assert config.scope == "read:jira-work"
+            assert config.scope == "read:confluence-content.all offline_access"
             assert config.cloud_id == "env-cloud-id"
             assert config.refresh_token == "loaded-refresh-token"
             assert config.access_token == "loaded-access-token"
@@ -632,7 +632,7 @@ class TestOAuthConfig:
             "ATLASSIAN_OAUTH_CLIENT_ID": "full-client-id",
             "ATLASSIAN_OAUTH_CLIENT_SECRET": "full-client-secret",
             "ATLASSIAN_OAUTH_REDIRECT_URI": "https://example.com/callback",
-            "ATLASSIAN_OAUTH_SCOPE": "read:jira-work",
+            "ATLASSIAN_OAUTH_SCOPE": "read:confluence-content.all offline_access",
             "ATLASSIAN_OAUTH_CLOUD_ID": "full-cloud-id",
         }.get(key, default)
 
@@ -645,7 +645,7 @@ class TestOAuthConfig:
             assert config.client_id == "full-client-id"
             assert config.client_secret == "full-client-secret"
             assert config.redirect_uri == "https://example.com/callback"
-            assert config.scope == "read:jira-work"
+            assert config.scope == "read:confluence-content.all offline_access"
             assert config.cloud_id == "full-cloud-id"
 
 

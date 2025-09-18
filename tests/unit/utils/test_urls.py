@@ -14,35 +14,25 @@ def test_is_atlassian_cloud_url_cloud():
     # Test standard Atlassian Cloud URLs
     assert is_atlassian_cloud_url("https://example.atlassian.net") is True
     assert is_atlassian_cloud_url("https://company.atlassian.net/wiki") is True
-    assert is_atlassian_cloud_url("https://subdomain.atlassian.net/jira") is True
     assert is_atlassian_cloud_url("http://other.atlassian.net") is True
-
-    # Test Jira Cloud specific domains
-    assert is_atlassian_cloud_url("https://company.jira.com") is True
-    assert is_atlassian_cloud_url("https://team.jira-dev.com") is True
 
 
 def test_is_atlassian_cloud_url_multi_cloud_oauth():
     """Test that is_atlassian_cloud_url returns True for Multi-Cloud OAuth URLs."""
     # Test api.atlassian.com URLs used by Multi-Cloud OAuth
     assert (
-        is_atlassian_cloud_url("https://api.atlassian.com/ex/jira/abc123/rest/api/2/")
-        is True
-    )
-    assert (
         is_atlassian_cloud_url("https://api.atlassian.com/ex/confluence/xyz789/")
         is True
     )
-    assert is_atlassian_cloud_url("http://api.atlassian.com/ex/jira/test/") is True
     assert is_atlassian_cloud_url("https://api.atlassian.com") is True
 
 
 def test_is_atlassian_cloud_url_server():
     """Test that is_atlassian_cloud_url returns False for Atlassian Server/Data Center URLs."""
     # Test with various server/data center domains
-    assert is_atlassian_cloud_url("https://jira.example.com") is False
+    assert is_atlassian_cloud_url("https://confluence.example.com") is False
     assert is_atlassian_cloud_url("https://confluence.company.org") is False
-    assert is_atlassian_cloud_url("https://jira.internal") is False
+    assert is_atlassian_cloud_url("https://confluence.internal") is False
 
 
 def test_is_atlassian_cloud_url_localhost():
@@ -50,7 +40,7 @@ def test_is_atlassian_cloud_url_localhost():
     # Test with localhost
     assert is_atlassian_cloud_url("http://localhost") is False
     assert is_atlassian_cloud_url("http://localhost:8080") is False
-    assert is_atlassian_cloud_url("https://localhost/jira") is False
+    assert is_atlassian_cloud_url("https://localhost/confluence") is False
 
 
 def test_is_atlassian_cloud_url_ip_addresses():

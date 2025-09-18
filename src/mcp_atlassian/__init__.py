@@ -89,25 +89,6 @@ logger = setup_logging(logging_level, logging_stream)
     help="Comma-separated list of Confluence space keys to filter search results",
 )
 @click.option(
-    "--jira-url",
-    help="Jira URL (e.g., https://your-domain.atlassian.net or https://jira.your-company.com)",
-)
-@click.option("--jira-username", help="Jira username/email (for Jira Cloud)")
-@click.option("--jira-token", help="Jira API token (for Jira Cloud)")
-@click.option(
-    "--jira-personal-token",
-    help="Jira Personal Access Token (for Jira Server/Data Center)",
-)
-@click.option(
-    "--jira-ssl-verify/--no-jira-ssl-verify",
-    default=True,
-    help="Verify SSL certificates for Jira Server/Data Center (default: verify)",
-)
-@click.option(
-    "--jira-projects-filter",
-    help="Comma-separated list of Jira project keys to filter search results",
-)
-@click.option(
     "--read-only",
     is_flag=True,
     help="Run in read-only mode (disables all write operations)",
@@ -155,12 +136,6 @@ def main(
     confluence_personal_token: str | None,
     confluence_ssl_verify: bool,
     confluence_spaces_filter: str | None,
-    jira_url: str | None,
-    jira_username: str | None,
-    jira_token: str | None,
-    jira_personal_token: str | None,
-    jira_ssl_verify: bool,
-    jira_projects_filter: str | None,
     read_only: bool,
     enabled_tools: str | None,
     oauth_client_id: str | None,
@@ -170,9 +145,9 @@ def main(
     oauth_cloud_id: str | None,
     oauth_access_token: str | None,
 ) -> None:
-    """MCP Atlassian Server - Jira and Confluence functionality for MCP
+    """MCP Atlassian Server - Confluence functionality for MCP
 
-    Supports both Atlassian Cloud and Jira Server/Data Center deployments.
+    Supports both Atlassian Cloud and Server/Data Center deployments.
     Authentication methods supported:
     - Username and API token (Cloud)
     - Personal Access Token (Server/Data Center)
@@ -275,14 +250,6 @@ def main(
         os.environ["CONFLUENCE_API_TOKEN"] = confluence_token
     if click_ctx and was_option_provided(click_ctx, "confluence_personal_token"):
         os.environ["CONFLUENCE_PERSONAL_TOKEN"] = confluence_personal_token
-    if click_ctx and was_option_provided(click_ctx, "jira_url"):
-        os.environ["JIRA_URL"] = jira_url
-    if click_ctx and was_option_provided(click_ctx, "jira_username"):
-        os.environ["JIRA_USERNAME"] = jira_username
-    if click_ctx and was_option_provided(click_ctx, "jira_token"):
-        os.environ["JIRA_API_TOKEN"] = jira_token
-    if click_ctx and was_option_provided(click_ctx, "jira_personal_token"):
-        os.environ["JIRA_PERSONAL_TOKEN"] = jira_personal_token
     if click_ctx and was_option_provided(click_ctx, "oauth_client_id"):
         os.environ["ATLASSIAN_OAUTH_CLIENT_ID"] = oauth_client_id
     if click_ctx and was_option_provided(click_ctx, "oauth_client_secret"):
@@ -301,10 +268,6 @@ def main(
         os.environ["CONFLUENCE_SSL_VERIFY"] = str(confluence_ssl_verify).lower()
     if click_ctx and was_option_provided(click_ctx, "confluence_spaces_filter"):
         os.environ["CONFLUENCE_SPACES_FILTER"] = confluence_spaces_filter
-    if click_ctx and was_option_provided(click_ctx, "jira_ssl_verify"):
-        os.environ["JIRA_SSL_VERIFY"] = str(jira_ssl_verify).lower()
-    if click_ctx and was_option_provided(click_ctx, "jira_projects_filter"):
-        os.environ["JIRA_PROJECTS_FILTER"] = jira_projects_filter
 
     from mcp_atlassian.servers import main_mcp
 

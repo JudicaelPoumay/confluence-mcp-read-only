@@ -12,7 +12,6 @@ from tests.utils.factories import (
     AuthConfigFactory,
     ConfluencePageFactory,
     ErrorResponseFactory,
-    JiraIssueFactory,
 )
 from tests.utils.mocks import MockAtlassianClient, MockEnvironment
 
@@ -46,11 +45,6 @@ def session_auth_configs():
     return {
         "oauth": AuthConfigFactory.create_oauth_config(),
         "basic_auth": AuthConfigFactory.create_basic_auth_config(),
-        "jira_basic": {
-            "url": "https://test.atlassian.net",
-            "username": "test@example.com",
-            "api_token": "test-jira-token",
-        },
         "confluence_basic": {
             "url": "https://test.atlassian.net/wiki",
             "username": "test@example.com",
@@ -71,21 +65,9 @@ def session_mock_data():
         Dict[str, Any]: Mock data templates for various API responses
     """
     return {
-        "jira_issue": JiraIssueFactory.create(),
-        "jira_issue_minimal": JiraIssueFactory.create_minimal(),
         "confluence_page": ConfluencePageFactory.create(),
         "api_error": ErrorResponseFactory.create_api_error(),
         "auth_error": ErrorResponseFactory.create_auth_error(),
-        "jira_search_results": {
-            "issues": [
-                JiraIssueFactory.create("TEST-1"),
-                JiraIssueFactory.create("TEST-2"),
-                JiraIssueFactory.create("TEST-3"),
-            ],
-            "total": 3,
-            "startAt": 0,
-            "maxResults": 50,
-        },
     }
 
 
@@ -106,18 +88,6 @@ def clean_environment():
 
 
 @pytest.fixture
-def oauth_environment():
-    """
-    Fixture that provides a complete OAuth environment setup.
-
-    This sets up all necessary OAuth environment variables for testing
-    OAuth-based authentication flows.
-    """
-    with MockEnvironment.oauth_env() as env:
-        yield env
-
-
-@pytest.fixture
 def basic_auth_environment():
     """
     Fixture that provides basic authentication environment setup.
@@ -131,23 +101,6 @@ def basic_auth_environment():
 # ============================================================================
 # Factory-Based Fixtures
 # ============================================================================
-
-
-@pytest.fixture
-def make_jira_issue():
-    """
-    Factory fixture for creating Jira issues with customizable properties.
-
-    Returns:
-        Callable: Factory function that creates Jira issue data
-
-    Example:
-        def test_issue_creation(make_jira_issue):
-            issue = make_jira_issue(key="CUSTOM-123",
-                                  fields={"priority": {"name": "High"}})
-            assert issue["key"] == "CUSTOM-123"
-    """
-    return JiraIssueFactory.create
 
 
 @pytest.fixture
@@ -208,20 +161,6 @@ def make_api_error():
 
 
 @pytest.fixture
-def mock_jira_client():
-    """
-    Fixture providing a pre-configured mock Jira client.
-
-    The client comes with sensible defaults for common operations
-    but can be customized per test as needed.
-
-    Returns:
-        MagicMock: Configured mock Jira client
-    """
-    return MockAtlassianClient.create_jira_client()
-
-
-@pytest.fixture
 def mock_confluence_client():
     """
     Fixture providing a pre-configured mock Confluence client.
@@ -238,18 +177,6 @@ def mock_confluence_client():
 # ============================================================================
 # Compatibility Fixtures (maintain backward compatibility)
 # ============================================================================
-
-
-@pytest.fixture
-def use_real_jira_data(request):
-    """
-    Check if real Jira data tests should be run.
-
-    This will be True if the --use-real-data flag is passed to pytest.
-
-    Note: This fixture is maintained for backward compatibility.
-    """
-    return request.config.getoption("--use-real-data")
 
 
 @pytest.fixture
@@ -336,7 +263,6 @@ def validate_test_environment():
         # Check if modules can be imported
         for module_name in [
             "tests.fixtures.confluence_mocks",
-            "tests.fixtures.jira_mocks",
             "tests.utils.base",
             "tests.utils.factories",
             "tests.utils.mocks",

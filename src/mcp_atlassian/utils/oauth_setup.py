@@ -310,8 +310,6 @@ def run_oauth_flow(args: OAuthSetupArgs) -> bool:
                             "-e",
                             "CONFLUENCE_URL",
                             "-e",
-                            "JIRA_URL",
-                            "-e",
                             "ATLASSIAN_OAUTH_CLIENT_ID",
                             "-e",
                             "ATLASSIAN_OAUTH_CLIENT_SECRET",
@@ -325,7 +323,6 @@ def run_oauth_flow(args: OAuthSetupArgs) -> bool:
                         ],
                         "env": {
                             "CONFLUENCE_URL": "https://your-company.atlassian.net/wiki",
-                            "JIRA_URL": "https://your-company.atlassian.net",
                             "ATLASSIAN_OAUTH_CLIENT_ID": oauth_config.client_id,
                             "ATLASSIAN_OAUTH_CLIENT_SECRET": oauth_config.client_secret,
                             "ATLASSIAN_OAUTH_REDIRECT_URI": oauth_config.redirect_uri,
@@ -407,7 +404,7 @@ def run_oauth_setup() -> int:
 
     default_scope = os.getenv(
         "ATLASSIAN_OAUTH_SCOPE",
-        "read:jira-work write:jira-work read:confluence-space.summary offline_access",
+        "read:confluence-content.all offline_access",
     )
     scope = (
         _prompt_for_input("OAuth Scopes (space-separated)", "ATLASSIAN_OAUTH_SCOPE")

@@ -109,7 +109,7 @@ class TestOAuthFlow:
                 mock_config.client_id = "test-client-id"
                 mock_config.client_secret = "test-client-secret"
                 mock_config.redirect_uri = "http://localhost:8080/callback"
-                mock_config.scope = "read:jira-work"
+                mock_config.scope = "read:confluence-content.all offline_access"
                 mock_config.cloud_id = "test-cloud-id"
                 mock_config.access_token = "test-access-token"
                 mock_config.refresh_token = "test-refresh-token"
@@ -119,7 +119,7 @@ class TestOAuthFlow:
                     client_id="test-client-id",
                     client_secret="test-client-secret",
                     redirect_uri="http://localhost:8080/callback",
-                    scope="read:jira-work",
+                    scope="read:confluence-content.all offline_access",
                 )
 
                 result = run_oauth_flow(args)
@@ -159,7 +159,7 @@ class TestOAuthFlow:
                 mock_config.client_id = "test-client-id"
                 mock_config.client_secret = "test-client-secret"
                 mock_config.redirect_uri = "https://example.com/callback"
-                mock_config.scope = "read:jira-work"
+                mock_config.scope = "read:confluence-content.all offline_access"
                 mock_config.cloud_id = "test-cloud-id"
                 mock_config.access_token = "test-access-token"
                 mock_config.refresh_token = "test-refresh-token"
@@ -169,7 +169,7 @@ class TestOAuthFlow:
                     client_id="test-client-id",
                     client_secret="test-client-secret",
                     redirect_uri="https://example.com/callback",
-                    scope="read:jira-work",
+                    scope="read:confluence-content.all offline_access",
                 )
 
                 result = run_oauth_flow(args)
@@ -193,7 +193,7 @@ class TestOAuthFlow:
                     client_id="test-client-id",
                     client_secret="test-client-secret",
                     redirect_uri="http://localhost:8080/callback",
-                    scope="read:jira-work",
+                    scope="read:confluence-content.all offline_access",
                 )
 
                 result = run_oauth_flow(args)
@@ -253,7 +253,7 @@ class TestOAuthFlow:
                     client_id="test-client-id",
                     client_secret="test-client-secret",
                     redirect_uri="http://localhost:8080/callback",
-                    scope="read:jira-work",
+                    scope="read:confluence-content.all offline_access",
                 )
 
                 result = run_oauth_flow(args)
@@ -292,7 +292,7 @@ class TestInteractiveSetup(BaseAuthTest):
                     "user-client-id",
                     "user-secret",
                     "http://localhost:9000/callback",
-                    "read:jira-work",
+                    "read:confluence-content.all offline_access",
                 ],
                 0,
             ),
@@ -341,14 +341,14 @@ class TestOAuthSetupArgs:
             client_id="test-id",
             client_secret="test-secret",
             redirect_uri="http://localhost:8080/callback",
-            scope="read:jira-work",
+            scope="read:confluence-content.all offline_access",
         )
 
         expected_config = {
             "client_id": "test-id",
             "client_secret": "test-secret",
             "redirect_uri": "http://localhost:8080/callback",
-            "scope": "read:jira-work",
+            "scope": "read:confluence-content.all offline_access",
         }
         assert_config_contains(vars(args), **expected_config)
 
@@ -362,7 +362,7 @@ class TestConfigurationGeneration:
             "client_id": "test-id",
             "client_secret": "test-secret",
             "redirect_uri": "http://localhost:8080/callback",
-            "scope": "read:jira-work",
+            "scope": "read:confluence-content.all offline_access",
             "cloud_id": "test-cloud-id",
         }
 

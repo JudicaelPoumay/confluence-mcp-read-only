@@ -25,41 +25,32 @@ def env_scenarios():
     return {
         "oauth_cloud": {
             "CONFLUENCE_URL": "https://company.atlassian.net",
-            "JIRA_URL": "https://company.atlassian.net",
             "ATLASSIAN_OAUTH_CLIENT_ID": "client_id",
             "ATLASSIAN_OAUTH_CLIENT_SECRET": "client_secret",
             "ATLASSIAN_OAUTH_REDIRECT_URI": "http://localhost:8080/callback",
-            "ATLASSIAN_OAUTH_SCOPE": "read:jira-user",
+            "ATLASSIAN_OAUTH_SCOPE": "read:confluence-content.all offline_access",
             "ATLASSIAN_OAUTH_CLOUD_ID": "cloud_id",
         },
         "basic_auth_cloud": {
             "CONFLUENCE_URL": "https://company.atlassian.net",
             "CONFLUENCE_USERNAME": "user@company.com",
             "CONFLUENCE_API_TOKEN": "api_token",
-            "JIRA_URL": "https://company.atlassian.net",
-            "JIRA_USERNAME": "user@company.com",
-            "JIRA_API_TOKEN": "api_token",
         },
         "pat_server": {
             "CONFLUENCE_URL": "https://confluence.company.com",
             "CONFLUENCE_PERSONAL_TOKEN": "pat_token",
-            "JIRA_URL": "https://jira.company.com",
-            "JIRA_PERSONAL_TOKEN": "pat_token",
         },
         "basic_auth_server": {
             "CONFLUENCE_URL": "https://confluence.company.com",
             "CONFLUENCE_USERNAME": "admin",
             "CONFLUENCE_API_TOKEN": "password",
-            "JIRA_URL": "https://jira.company.com",
-            "JIRA_USERNAME": "admin",
-            "JIRA_API_TOKEN": "password",
         },
     }
 
 
-def _assert_service_availability(result, confluence_expected, jira_expected):
+def _assert_service_availability(result, confluence_expected):
     """Helper to assert service availability."""
-    assert result == {"confluence": confluence_expected, "jira": jira_expected}
+    assert result == {"confluence": confluence_expected}
 
 
 def _assert_authentication_logs(caplog, auth_type, services):
@@ -90,24 +81,20 @@ class TestGetAvailableServices:
         """Test that no services are available when no environment variables are set."""
         with MockEnvironment.clean_env():
             result = get_available_services()
-            _assert_service_availability(
-                result, confluence_expected=False, jira_expected=False
-            )
-            _assert_authentication_logs(
-                caplog, "not_configured", ["confluence", "jira"]
-            )
+            _assert_service_availability(result, confluence_expected=False)
+            _assert_authentication_logs(caplog, "not_configured", ["confluence"])
 
     @pytest.mark.parametrize(
-        "scenario,expected_confluence,expected_jira",
+        "scenario,expected_confluence",
         [
-            ("oauth_cloud", True, True),
-            ("basic_auth_cloud", True, True),
-            ("pat_server", True, True),
-            ("basic_auth_server", True, True),
+            ("oauth_cloud", True),
+            ("basic_auth_cloud", True),
+            ("pat_server", True),
+            ("basic_auth_server", True),
         ],
     )
     def test_valid_authentication_scenarios(
-        self, env_scenarios, scenario, expected_confluence, expected_jira, caplog
+        self, env_scenarios, scenario, expected_confluence, caplog
     ):
         """Test various valid authentication scenarios."""
         with MockEnvironment.clean_env():
@@ -120,18 +107,15 @@ class TestGetAvailableServices:
             _assert_service_availability(
                 result,
                 confluence_expected=expected_confluence,
-                jira_expected=expected_jira,
             )
 
             # Verify appropriate log messages based on scenario
             if scenario == "oauth_cloud":
-                _assert_authentication_logs(caplog, "oauth", ["confluence", "jira"])
+                _assert_authentication_logs(caplog, "oauth", ["confluence"])
             elif scenario == "basic_auth_cloud":
-                _assert_authentication_logs(
-                    caplog, "cloud_basic", ["confluence", "jira"]
-                )
+                _assert_authentication_logs(caplog, "cloud_basic", ["confluence"])
             elif scenario in ["pat_server", "basic_auth_server"]:
-                _assert_authentication_logs(caplog, "server", ["confluence", "jira"])
+                _assert_authentication_logs(caplog, "server", ["confluence"])
 
     @pytest.mark.parametrize(
         "missing_oauth_var",
@@ -158,15 +142,13 @@ class TestGetAvailableServices:
                 os.environ[key] = value
 
             result = get_available_services()
-            _assert_service_availability(
-                result, confluence_expected=False, jira_expected=False
-            )
+            _assert_service_availability(result, confluence_expected=False)
 
     @pytest.mark.parametrize(
         "missing_basic_vars,service",
         [
-            (["CONFLUENCE_USERNAME", "JIRA_USERNAME"], "username"),
-            (["CONFLUENCE_API_TOKEN", "JIRA_API_TOKEN"], "token"),
+            (["CONFLUENCE_USERNAME"], "username"),
+            (["CONFLUENCE_API_TOKEN"], "token"),
         ],
     )
     def test_basic_auth_missing_credentials(
@@ -186,9 +168,7 @@ class TestGetAvailableServices:
                 os.environ[key] = value
 
             result = get_available_services()
-            _assert_service_availability(
-                result, confluence_expected=False, jira_expected=False
-            )
+            _assert_service_availability(result, confluence_expected=False)
 
     def test_oauth_precedence_over_basic_auth(self, env_scenarios, caplog):
         """Test that OAuth takes precedence over Basic Auth."""
@@ -205,12 +185,10 @@ class TestGetAvailableServices:
                 os.environ[key] = value
 
             result = get_available_services()
-            _assert_service_availability(
-                result, confluence_expected=True, jira_expected=True
-            )
+            _assert_service_availability(result, confluence_expected=True)
 
             # Should use OAuth, not Basic Auth
-            _assert_authentication_logs(caplog, "oauth", ["confluence", "jira"])
+            _assert_authentication_logs(caplog, "oauth", ["confluence"])
             assert "Basic Authentication" not in caplog.text
 
     def test_mixed_service_configuration(self, caplog):
@@ -223,12 +201,9 @@ class TestGetAvailableServices:
             os.environ["CONFLUENCE_API_TOKEN"] = "api_token"
 
             result = get_available_services()
-            _assert_service_availability(
-                result, confluence_expected=True, jira_expected=False
-            )
+            _assert_service_availability(result, confluence_expected=True)
 
             _assert_authentication_logs(caplog, "cloud_basic", ["confluence"])
-            _assert_authentication_logs(caplog, "not_configured", ["jira"])
 
     def test_return_value_structure(self):
         """Test that the return value has the correct structure."""
@@ -236,13 +211,13 @@ class TestGetAvailableServices:
             result = get_available_services()
 
             assert isinstance(result, dict)
-            assert set(result.keys()) == {"confluence", "jira"}
+            assert set(result.keys()) == {"confluence"}
             assert all(isinstance(v, bool) for v in result.values())
 
     @pytest.mark.parametrize(
         "invalid_vars",
         [
-            {"CONFLUENCE_URL": "", "JIRA_URL": ""},  # Empty strings
+            {"CONFLUENCE_URL": ""},  # Empty strings
             {"confluence_url": "https://test.com"},  # Wrong case
         ],
     )
@@ -255,9 +230,5 @@ class TestGetAvailableServices:
                 os.environ[key] = value
 
             result = get_available_services()
-            _assert_service_availability(
-                result, confluence_expected=False, jira_expected=False
-            )
-            _assert_authentication_logs(
-                caplog, "not_configured", ["confluence", "jira"]
-            )
+            _assert_service_availability(result, confluence_expected=False)
+            _assert_authentication_logs(caplog, "not_configured", ["confluence"])

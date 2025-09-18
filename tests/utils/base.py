@@ -35,7 +35,7 @@ class BaseAuthTest:
             "ATLASSIAN_OAUTH_CLIENT_ID": "test-client-id",
             "ATLASSIAN_OAUTH_CLIENT_SECRET": "test-client-secret",
             "ATLASSIAN_OAUTH_REDIRECT_URI": "http://localhost:8080/callback",
-            "ATLASSIAN_OAUTH_SCOPE": "read:jira-work write:jira-work",
+            "ATLASSIAN_OAUTH_SCOPE": "read:confluence-content.all offline_access",
             "ATLASSIAN_OAUTH_CLOUD_ID": "test-cloud-id",
         }
 
@@ -43,9 +43,6 @@ class BaseAuthTest:
     def basic_auth_env_vars(self):
         """Standard basic auth environment variables."""
         return {
-            "JIRA_URL": "https://test.atlassian.net",
-            "JIRA_USERNAME": "test@example.com",
-            "JIRA_API_TOKEN": "test-token",
             "CONFLUENCE_URL": "https://test.atlassian.net/wiki",
             "CONFLUENCE_USERNAME": "test@example.com",
             "CONFLUENCE_API_TOKEN": "test-token",

@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-from .factories import AuthConfigFactory, ConfluencePageFactory, JiraIssueFactory
+from .factories import AuthConfigFactory, ConfluencePageFactory
 
 
 class MockEnvironment:
@@ -32,9 +32,6 @@ class MockEnvironment:
         """Context manager for basic auth environment variables."""
         auth_config = AuthConfigFactory.create_basic_auth_config()
         env_vars = {
-            "JIRA_URL": auth_config["url"],
-            "JIRA_USERNAME": auth_config["username"],
-            "JIRA_API_TOKEN": auth_config["api_token"],
             "CONFLUENCE_URL": f"{auth_config['url']}/wiki",
             "CONFLUENCE_USERNAME": auth_config["username"],
             "CONFLUENCE_API_TOKEN": auth_config["api_token"],
@@ -47,9 +44,6 @@ class MockEnvironment:
     def clean_env():
         """Context manager with no authentication environment variables."""
         auth_vars = [
-            "JIRA_URL",
-            "JIRA_USERNAME",
-            "JIRA_API_TOKEN",
             "CONFLUENCE_URL",
             "CONFLUENCE_USERNAME",
             "CONFLUENCE_API_TOKEN",
@@ -70,36 +64,6 @@ class MockEnvironment:
 
 class MockAtlassianClient:
     """Factory for creating mock Atlassian clients."""
-
-    @staticmethod
-    def create_jira_client(**response_overrides):
-        """Create a mock Jira client with common responses."""
-        client = MagicMock()
-
-        # Default responses
-        default_responses = {
-            "issue": JiraIssueFactory.create(),
-            "search_issues": {
-                "issues": [
-                    JiraIssueFactory.create("TEST-1"),
-                    JiraIssueFactory.create("TEST-2"),
-                ],
-                "total": 2,
-            },
-            "projects": [{"key": "TEST", "name": "Test Project"}],
-            "fields": [{"id": "summary", "name": "Summary"}],
-        }
-
-        # Merge with overrides
-        responses = {**default_responses, **response_overrides}
-
-        # Set up mock methods
-        client.issue.return_value = responses["issue"]
-        client.search_issues.return_value = responses["search_issues"]
-        client.projects.return_value = responses["projects"]
-        client.fields.return_value = responses["fields"]
-
-        return client
 
     @staticmethod
     def create_confluence_client(**response_overrides):
